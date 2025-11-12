@@ -1,0 +1,47 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cashGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="shadowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="url(#cashGradient)" stroke="#ffffff" stroke-width="4"/>
+  
+  <!-- Cash stack shadow -->
+  <rect x="60" y="80" width="140" height="20" rx="10" fill="url(#shadowGradient)"/>
+  <rect x="65" y="75" width="140" height="20" rx="10" fill="url(#shadowGradient)"/>
+  
+  <!-- Cash stack -->
+  <rect x="70" y="70" width="140" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="75" y="65" width="140" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="80" y="60" width="140" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="85" y="55" width="140" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  <rect x="90" y="50" width="140" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" stroke-width="1"/>
+  
+  <!-- Dollar signs on bills -->
+  <text x="140" y="65" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#22c55e" text-anchor="middle">$</text>
+  <text x="145" y="70" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#22c55e" text-anchor="middle">$</text>
+  <text x="150" y="75" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#22c55e" text-anchor="middle">$</text>
+  <text x="155" y="80" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#22c55e" text-anchor="middle">$</text>
+  <text x="160" y="85" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#22c55e" text-anchor="middle">$</text>
+  
+  <!-- Chart/Graph icon overlay -->
+  <rect x="100" y="120" width="60" height="40" rx="5" fill="#ffffff" stroke="#22c55e" stroke-width="2"/>
+  <polyline points="110,150 120,140 130,145 140,130 150,135" fill="none" stroke="#22c55e" stroke-width="3"/>
+  <circle cx="110" cy="150" r="3" fill="#22c55e"/>
+  <circle cx="120" cy="140" r="3" fill="#22c55e"/>
+  <circle cx="130" cy="145" r="3" fill="#22c55e"/>
+  <circle cx="140" cy="130" r="3" fill="#22c55e"/>
+  <circle cx="150" cy="135" r="3" fill="#22c55e"/>
+  
+  <!-- App name -->
+  <text x="128" y="200" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">ProfitTracker</text>
+  <text x="128" y="220" font-family="Arial, sans-serif" font-size="12" fill="#ffffff" text-anchor="middle">Pro</text>
+</svg>
+
