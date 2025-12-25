@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
-import { DollarSign, Package, Plus, Trash2, Search, Filter, Download, Upload, ArrowUpDown, X } from 'lucide-react';
+import { DollarSign, Package, Plus, Trash2, Search, Filter, Download, Upload, ArrowUpDown, X, Instagram, CalendarDays } from 'lucide-react';
 import './App.css';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -10,7 +10,7 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineEleme
 const VAT_RATE = 0.21; // 21% Dutch VAT
 const VAT_START_DATE = '2025-01-01'; // KVK registration date
 
-const FinanceInventoryApp = () => {
+const FinanceInventoryApp = ({ switcherProps }) => {
   const [activeTab, setActiveTab] = useState('finances');
   const [finances, setFinances] = useState([]);
   const [inventory, setInventory] = useState([
@@ -1287,27 +1287,57 @@ const FinanceInventoryApp = () => {
 
       {/* Navigation */}
       <nav className="nav">
-        <button 
-          className={'nav-button ' + (activeTab === 'finances' ? 'active' : '')}
-          onClick={() => setActiveTab('finances')}
-        >
-          <DollarSign size={20} />
-          Finances
-        </button>
-        <button 
-          className={'nav-button ' + (activeTab === 'inventory' ? 'active' : '')}
-          onClick={() => setActiveTab('inventory')}
-        >
-          <Package size={20} />
-          Inventory
-        </button>
-        <button 
-          className={'nav-button ' + (activeTab === 'analytics' ? 'active' : '')}
-          onClick={() => setActiveTab('analytics')}
-        >
-          <Filter size={20} />
-          Analytics
-        </button>
+        <div className="nav-left">
+          <button 
+            className={'nav-button ' + (activeTab === 'finances' ? 'active' : '')}
+            onClick={() => setActiveTab('finances')}
+          >
+            <DollarSign size={20} />
+            Finances
+          </button>
+          <button 
+            className={'nav-button ' + (activeTab === 'inventory' ? 'active' : '')}
+            onClick={() => setActiveTab('inventory')}
+          >
+            <Package size={20} />
+            Inventory
+          </button>
+          <button 
+            className={'nav-button ' + (activeTab === 'analytics' ? 'active' : '')}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <Filter size={20} />
+            Analytics
+          </button>
+        </div>
+        {switcherProps && (
+          <div className="nav-switcher">
+            <button
+              className={`nav-switcher-button ${switcherProps.currentApp === 'profit' ? 'active' : ''}`}
+              onClick={() => switcherProps.switchApp('profit')}
+              disabled={switcherProps.isAnimating}
+              title="Profit Tracker"
+            >
+              <DollarSign size={18} />
+            </button>
+            <button
+              className={`nav-switcher-button ${switcherProps.currentApp === 'instagram' ? 'active' : ''}`}
+              onClick={() => switcherProps.switchApp('instagram')}
+              disabled={switcherProps.isAnimating}
+              title="Instagram Analytics"
+            >
+              <Instagram size={18} />
+            </button>
+            <button
+              className={`nav-switcher-button ${switcherProps.currentApp === 'content' ? 'active' : ''}`}
+              onClick={() => switcherProps.switchApp('content')}
+              disabled={switcherProps.isAnimating}
+              title="Content Planner"
+            >
+              <CalendarDays size={18} />
+            </button>
+          </div>
+        )}
       </nav>
 
 
