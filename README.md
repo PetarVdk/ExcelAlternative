@@ -30,9 +30,6 @@ npm run dev
 # Build for Windows
 npm run make:win
 
-# Build for macOS
-npm run make:mac
-
 # Build for Linux
 npm run make:linux
 
@@ -45,7 +42,7 @@ npm run build
 - **App Name**: ProfitTracker Pro
 - **Version**: 1.0.0
 - **Category**: Finance & Business
-- **Platform**: Windows, macOS, Linux
+- **Platform**: Windows, Linux
 - **KVK Number**: [YOUR_KVK_NUMBER]
 
 ## 🛠️ Technical Details

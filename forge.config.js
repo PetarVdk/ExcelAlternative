@@ -39,29 +39,9 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['win32', 'darwin', 'linux'],
+      platforms: ['win32', 'linux'],
       config: {
         name: 'ProfitTrackerPro'
-      }
-    },
-    {
-      name: '@electron-forge/maker-dmg',
-      config: {
-        name: 'profit-tracker-pro-mac',
-        background: './assets/icon.png',
-        format: 'UDZO',
-        icon: './assets/icon.png',
-        iconSize: 128,
-        contents: [
-          { x: 380, y: 280, type: 'link', path: '/Applications' },
-          { x: 110, y: 280, type: 'file', path: 'ProfitTracker Pro.app' }
-        ],
-        window: {
-          size: {
-            width: 540,
-            height: 380
-          }
-        }
       }
     },
     {

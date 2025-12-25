@@ -21,7 +21,9 @@ const ContentPlanner = ({ switcherProps }) => {
     hashtags: '',
     postType: 'photo',
     notes: '',
-    imagePreview: ''
+    imagePreview: '',
+    linkedProductIds: [],
+    campaignType: ''
   });
   const [newIdea, setNewIdea] = useState({
     title: '',
@@ -34,12 +36,14 @@ const ContentPlanner = ({ switcherProps }) => {
   });
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date());
   const [ideaFilter, setIdeaFilter] = useState('all');
+  const [inventory, setInventory] = useState([]);
 
   // Load data from localStorage
   useEffect(() => {
     const savedAccounts = localStorage.getItem('instagram_accounts');
     const savedPlannedPosts = localStorage.getItem('instagram_planned_posts');
     const savedContentIdeas = localStorage.getItem('content_ideas');
+    const savedInventory = localStorage.getItem('inventory');
     
     if (savedAccounts && savedAccounts !== '[]') {
       const parsed = JSON.parse(savedAccounts);
@@ -53,6 +57,9 @@ const ContentPlanner = ({ switcherProps }) => {
     }
     if (savedContentIdeas && savedContentIdeas !== '[]') {
       setContentIdeas(JSON.parse(savedContentIdeas));
+    }
+    if (savedInventory && savedInventory !== '[]') {
+      setInventory(JSON.parse(savedInventory));
     }
   }, []);
 
@@ -108,7 +115,9 @@ const ContentPlanner = ({ switcherProps }) => {
       hashtags: '',
       postType: 'photo',
       notes: '',
-      imagePreview: ''
+      imagePreview: '',
+      linkedProductIds: [],
+      campaignType: ''
     });
     setEditingPlannedPost(null);
     setShowPlannerModal(false);
@@ -124,7 +133,9 @@ const ContentPlanner = ({ switcherProps }) => {
       hashtags: post.hashtags || '',
       postType: post.postType || 'photo',
       notes: post.notes || '',
-      imagePreview: post.imagePreview || ''
+      imagePreview: post.imagePreview || '',
+      linkedProductIds: post.linkedProductIds || [],
+      campaignType: post.campaignType || ''
     });
     setShowPlannerModal(true);
   };
@@ -716,18 +727,65 @@ const ContentPlanner = ({ switcherProps }) => {
               </div>
             </div>
 
+            <div className="form-row">
+              <div className="form-group">
+                <label>Post Type</label>
+                <select
+                  value={newPlannedPost.postType}
+                  onChange={(e) => setNewPlannedPost({...newPlannedPost, postType: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="photo">Photo</option>
+                  <option value="video">Video</option>
+                  <option value="carousel">Carousel</option>
+                  <option value="reel">Reel</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Campaign Type</label>
+                <select
+                  value={newPlannedPost.campaignType}
+                  onChange={(e) => setNewPlannedPost({...newPlannedPost, campaignType: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="">Regular</option>
+                  <option value="sale">Sale</option>
+                  <option value="launch">Product Launch</option>
+                  <option value="promotion">Promotion</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Product Linking */}
             <div className="form-group">
-              <label>Post Type</label>
-              <select
-                value={newPlannedPost.postType}
-                onChange={(e) => setNewPlannedPost({...newPlannedPost, postType: e.target.value})}
-                className="input-field"
-              >
-                <option value="photo">Photo</option>
-                <option value="video">Video</option>
-                <option value="carousel">Carousel</option>
-                <option value="reel">Reel</option>
-              </select>
+              <label>Link Products (from Inventory)</label>
+              <div className="product-selector">
+                {inventory.filter(item => item.status === 'in-stock' || item.status === 'sold').map(item => (
+                  <label key={item.id} className="product-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={newPlannedPost.linkedProductIds?.includes(item.id) || false}
+                      onChange={(e) => {
+                        const currentIds = newPlannedPost.linkedProductIds || [];
+                        if (e.target.checked) {
+                          setNewPlannedPost({...newPlannedPost, linkedProductIds: [...currentIds, item.id]});
+                        } else {
+                          setNewPlannedPost({...newPlannedPost, linkedProductIds: currentIds.filter(id => id !== item.id)});
+                        }
+                      }}
+                      className="product-checkbox"
+                    />
+                    <span className="product-checkbox-text">
+                      {item.brand} {item.item} {item.status === 'sold' && `(Sold: €${item.sellPrice || 0})`}
+                    </span>
+                  </label>
+                ))}
+                {inventory.length === 0 && (
+                  <p className="vat-note" style={{ marginTop: '0.5rem' }}>
+                    No products in inventory. Add products in Profit Tracker first.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="form-group">

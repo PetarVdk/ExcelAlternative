@@ -110,7 +110,8 @@ App (Main Component)
 - **Template Literals**: ` Sold:   `
 - **Async/Await**: For file operations and data processing
 - **Spread Operator**: [...inventory, newItem]
-- **Array Methods**: map(), ilter(), educe(), ind()
+- **Array Methods**: map(), ilter(), 
+educe(), ind()
 
 **Example Implementation:**
 `javascript
@@ -315,7 +316,7 @@ const chartData = {
 **Build & Packaging Tool** - Application distribution
 
 **Features:**
-- **Cross-platform Building**: Windows, Mac, Linux
+- **Cross-platform Building**: Windows, Linux
 - **Installer Creation**: Native installers
 - **Code Signing**: Application security
 - **Auto-updater**: Update management

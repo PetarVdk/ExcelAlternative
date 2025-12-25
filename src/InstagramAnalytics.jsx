@@ -42,18 +42,23 @@ const InstagramAnalytics = ({ switcherProps }) => {
     postType: 'photo', // photo, video, carousel, reel
     linkClicks: '',
     profileVisits: '',
-    websiteClicks: ''
+    websiteClicks: '',
+    linkedProductIds: [], // Array of inventory item IDs
+    revenue: '', // Revenue generated from this post
+    campaignType: '' // 'sale', 'launch', 'promotion', 'regular'
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [processingOCR, setProcessingOCR] = useState(false);
   const [ocrPreview, setOcrPreview] = useState(null);
+  const [inventory, setInventory] = useState([]); // Load from Profit Tracker
 
   // Load data from localStorage
   useEffect(() => {
     const savedAccounts = localStorage.getItem('instagram_accounts');
     const savedPosts = localStorage.getItem('instagram_posts');
+    const savedInventory = localStorage.getItem('inventory');
     
     if (savedAccounts && savedAccounts !== '[]') {
       const parsed = JSON.parse(savedAccounts);
@@ -64,6 +69,9 @@ const InstagramAnalytics = ({ switcherProps }) => {
     }
     if (savedPosts && savedPosts !== '[]') {
       setPosts(JSON.parse(savedPosts));
+    }
+    if (savedInventory && savedInventory !== '[]') {
+      setInventory(JSON.parse(savedInventory));
     }
   }, []);
 
@@ -151,6 +159,7 @@ const InstagramAnalytics = ({ switcherProps }) => {
     const impressions = parseInt(newPost.impressions) || 0;
     const engagement = likes + comments + shares + saves;
 
+    const revenue = parseFloat(newPost.revenue) || 0;
     const post = {
       id: editingPost ? editingPost.id : Date.now(),
       ...newPost,
@@ -163,6 +172,10 @@ const InstagramAnalytics = ({ switcherProps }) => {
       impressions,
       engagement,
       engagementRate: reach > 0 ? ((engagement / reach) * 100).toFixed(2) : 0,
+      linkedProductIds: newPost.linkedProductIds || [],
+      revenue: revenue,
+      campaignType: newPost.campaignType || '',
+      roi: revenue > 0 && engagement > 0 ? ((revenue / engagement) * 100).toFixed(2) : 0, // Revenue per engagement point
       createdAt: editingPost ? editingPost.createdAt : new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -191,7 +204,10 @@ const InstagramAnalytics = ({ switcherProps }) => {
       postType: 'photo',
       linkClicks: '',
       profileVisits: '',
-      websiteClicks: ''
+      websiteClicks: '',
+      linkedProductIds: [],
+      revenue: '',
+      campaignType: ''
     });
     setShowPostModal(false);
     setEditingPost(null);
@@ -220,7 +236,10 @@ const InstagramAnalytics = ({ switcherProps }) => {
       postType: post.postType || 'photo',
       linkClicks: post.linkClicks || '',
       profileVisits: post.profileVisits || '',
-      websiteClicks: post.websiteClicks || ''
+      websiteClicks: post.websiteClicks || '',
+      linkedProductIds: post.linkedProductIds || [],
+      revenue: post.revenue || '',
+      campaignType: post.campaignType || ''
     });
     setShowPostModal(true);
   };
@@ -1007,15 +1026,43 @@ const InstagramAnalytics = ({ switcherProps }) => {
                               <Eye size={16} />
                               <span>{post.reach.toLocaleString()} reach</span>
                             </div>
-                            <div className="post-stat">
-                              <TrendingUp size={16} />
-                              <span>{engagementRate}% ER</span>
-                            </div>
+                          <div className="post-stat">
+                            <TrendingUp size={16} />
+                            <span>{engagementRate}% ER</span>
                           </div>
-                          <div className="post-date">{new Date(post.postDate).toLocaleDateString()}</div>
+                          {post.revenue && parseFloat(post.revenue) > 0 && (
+                            <div className="post-stat revenue-stat">
+                              <DollarSign size={16} />
+                              <span className="revenue-text">€{parseFloat(post.revenue).toFixed(2)}</span>
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
+                        {post.linkedProductIds && post.linkedProductIds.length > 0 && (
+                          <div className="post-products">
+                            <span className="post-products-label">Products:</span>
+                            {post.linkedProductIds.map(productId => {
+                              const product = inventory.find(p => p.id === productId);
+                              return product ? (
+                                <span key={productId} className="post-product-tag">
+                                  {product.brand} {product.item}
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                        {post.campaignType && (
+                          <div className="post-campaign-badge">
+                            <span className={`campaign-badge campaign-${post.campaignType}`}>
+                              {post.campaignType === 'sale' ? 'Sale' : 
+                               post.campaignType === 'launch' ? 'Launch' : 
+                               post.campaignType === 'promotion' ? 'Promotion' : post.campaignType}
+                            </span>
+                          </div>
+                        )}
+                        <div className="post-date">{new Date(post.postDate).toLocaleDateString()}</div>
+                      </div>
+                    );
+                  })}
                   </div>
                 </div>
               </div>
@@ -1023,6 +1070,198 @@ const InstagramAnalytics = ({ switcherProps }) => {
 
             {activeTab === 'analytics' && (
               <div className="tab-content">
+                {/* Product Performance Dashboard */}
+                <div className="card">
+                  <h2>📊 Product Performance Dashboard</h2>
+                  {(() => {
+                    const productStats = {};
+                    const productRevenue = {};
+                    
+                    // Calculate product performance
+                    currentAccountPosts.forEach(post => {
+                      if (post.linkedProductIds && post.linkedProductIds.length > 0) {
+                        post.linkedProductIds.forEach(productId => {
+                          const product = inventory.find(p => p.id === productId);
+                          if (product) {
+                            if (!productStats[productId]) {
+                              productStats[productId] = {
+                                product: product,
+                                posts: 0,
+                                totalEngagement: 0,
+                                totalReach: 0,
+                                totalRevenue: 0
+                              };
+                            }
+                            productStats[productId].posts++;
+                            productStats[productId].totalEngagement += post.engagement || 0;
+                            productStats[productId].totalReach += post.reach || 0;
+                            productStats[productId].totalRevenue += parseFloat(post.revenue) || 0;
+                          }
+                        });
+                      }
+                    });
+
+                    const sortedProducts = Object.values(productStats)
+                      .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+                    return sortedProducts.length > 0 ? (
+                      <>
+                        <div className="product-performance-grid">
+                          {sortedProducts.map((stat, index) => {
+                            const product = stat.product;
+                            const avgEngagement = stat.posts > 0 ? (stat.totalEngagement / stat.posts).toFixed(0) : 0;
+                            const engagementRate = stat.totalReach > 0 ? ((stat.totalEngagement / stat.totalReach) * 100).toFixed(2) : 0;
+                            const revenuePerPost = stat.posts > 0 ? (stat.totalRevenue / stat.posts).toFixed(2) : 0;
+                            
+                            return (
+                              <div key={product.id} className="product-performance-card">
+                                <div className="product-performance-header">
+                                  <h3>{product.brand} {product.item}</h3>
+                                  <span className={`product-status-badge product-status-${product.status}`}>
+                                    {product.status}
+                                  </span>
+                                </div>
+                                <div className="product-performance-stats">
+                                  <div className="product-stat">
+                                    <span className="product-stat-label">Posts:</span>
+                                    <span className="product-stat-value">{stat.posts}</span>
+                                  </div>
+                                  <div className="product-stat">
+                                    <span className="product-stat-label">Total Revenue:</span>
+                                    <span className="product-stat-value revenue">€{stat.totalRevenue.toFixed(2)}</span>
+                                  </div>
+                                  <div className="product-stat">
+                                    <span className="product-stat-label">Avg Engagement:</span>
+                                    <span className="product-stat-value">{avgEngagement}</span>
+                                  </div>
+                                  <div className="product-stat">
+                                    <span className="product-stat-label">Engagement Rate:</span>
+                                    <span className="product-stat-value">{engagementRate}%</span>
+                                  </div>
+                                  <div className="product-stat">
+                                    <span className="product-stat-label">Revenue/Post:</span>
+                                    <span className="product-stat-value revenue">€{revenuePerPost}</span>
+                                  </div>
+                                </div>
+                                {product.sellPrice && (
+                                  <div className="product-performance-footer">
+                                    <span>Sale Price: €{product.sellPrice}</span>
+                                    {stat.totalRevenue > 0 && (
+                                      <span className="conversion-indicator">
+                                        {((stat.totalRevenue / (product.sellPrice * stat.posts)) * 100).toFixed(0)}% conversion
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="product-performance-summary">
+                          <div className="summary-stat">
+                            <h3>Total Products Featured</h3>
+                            <p className="summary-value">{sortedProducts.length}</p>
+                          </div>
+                          <div className="summary-stat">
+                            <h3>Total Revenue from Posts</h3>
+                            <p className="summary-value revenue">
+                              €{sortedProducts.reduce((sum, stat) => sum + stat.totalRevenue, 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="summary-stat">
+                            <h3>Best Performing Product</h3>
+                            <p className="summary-value">
+                              {sortedProducts[0]?.product.brand} {sortedProducts[0]?.product.item}
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="vat-note">
+                        Link products to your posts to see product performance analytics. Go to "Posts" tab and edit a post to link products.
+                      </p>
+                    );
+                  })()}
+                </div>
+
+                {/* Sales Attribution */}
+                <div className="card">
+                  <h2>💰 Sales Attribution</h2>
+                  {(() => {
+                    const postsWithRevenue = currentAccountPosts.filter(p => p.revenue && parseFloat(p.revenue) > 0);
+                    const totalRevenue = postsWithRevenue.reduce((sum, p) => sum + parseFloat(p.revenue || 0), 0);
+                    const totalROI = postsWithRevenue.reduce((sum, p) => {
+                      const revenue = parseFloat(p.revenue || 0);
+                      const engagement = p.engagement || 1;
+                      return sum + (revenue / engagement);
+                    }, 0);
+                    const avgROI = postsWithRevenue.length > 0 ? (totalROI / postsWithRevenue.length).toFixed(2) : 0;
+
+                    return postsWithRevenue.length > 0 ? (
+                      <>
+                        <div className="sales-attribution-summary">
+                          <div className="attribution-stat">
+                            <h3>Total Revenue Tracked</h3>
+                            <p className="attribution-value revenue">€{totalRevenue.toFixed(2)}</p>
+                          </div>
+                          <div className="attribution-stat">
+                            <h3>Posts with Revenue</h3>
+                            <p className="attribution-value">{postsWithRevenue.length}</p>
+                          </div>
+                          <div className="attribution-stat">
+                            <h3>Avg Revenue per Post</h3>
+                            <p className="attribution-value revenue">
+                              €{(totalRevenue / postsWithRevenue.length).toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="attribution-stat">
+                            <h3>Avg ROI (€ per Engagement)</h3>
+                            <p className="attribution-value">€{avgROI}</p>
+                          </div>
+                        </div>
+                        <div className="top-revenue-posts">
+                          <h3>Top Revenue-Generating Posts</h3>
+                          <div className="revenue-posts-list">
+                            {[...postsWithRevenue]
+                              .sort((a, b) => parseFloat(b.revenue || 0) - parseFloat(a.revenue || 0))
+                              .slice(0, 10)
+                              .map(post => {
+                                const linkedProducts = post.linkedProductIds?.map(id => 
+                                  inventory.find(p => p.id === id)
+                                ).filter(Boolean) || [];
+                                return (
+                                  <div key={post.id} className="revenue-post-item">
+                                    <div className="revenue-post-header">
+                                      <span className="revenue-post-caption">
+                                        {post.caption.substring(0, 80)}...
+                                      </span>
+                                      <span className="revenue-post-amount revenue">
+                                        €{parseFloat(post.revenue || 0).toFixed(2)}
+                                      </span>
+                                    </div>
+                                    <div className="revenue-post-details">
+                                      <span>{post.engagement} engagement</span>
+                                      <span>ROI: €{((parseFloat(post.revenue || 0) / (post.engagement || 1))).toFixed(2)}/engagement</span>
+                                      {linkedProducts.length > 0 && (
+                                        <span className="linked-products">
+                                          Products: {linkedProducts.map(p => `${p.brand} ${p.item}`).join(', ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="vat-note">
+                        Add revenue data to your posts to see sales attribution. Edit a post and enter the revenue generated.
+                      </p>
+                    );
+                  })()}
+                </div>
+
                 {/* Best Posting Times */}
                 {(() => {
                   const postingTimes = calculateBestPostingTimes();
@@ -1395,18 +1634,81 @@ const InstagramAnalytics = ({ switcherProps }) => {
                 />
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Post Type</label>
+                <select
+                  value={newPost.postType}
+                  onChange={(e) => setNewPost({...newPost, postType: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="photo">Photo</option>
+                  <option value="video">Video</option>
+                  <option value="carousel">Carousel</option>
+                  <option value="reel">Reel</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Campaign Type</label>
+                <select
+                  value={newPost.campaignType}
+                  onChange={(e) => setNewPost({...newPost, campaignType: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="">Regular</option>
+                  <option value="sale">Sale</option>
+                  <option value="launch">Product Launch</option>
+                  <option value="promotion">Promotion</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Product Linking */}
             <div className="form-group">
-              <label>Post Type</label>
-              <select
-                value={newPost.postType}
-                onChange={(e) => setNewPost({...newPost, postType: e.target.value})}
+              <label>Link Products (from Inventory)</label>
+              <div className="product-selector">
+                {inventory.filter(item => item.status === 'in-stock' || item.status === 'sold').map(item => (
+                  <label key={item.id} className="product-checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={newPost.linkedProductIds?.includes(item.id) || false}
+                      onChange={(e) => {
+                        const currentIds = newPost.linkedProductIds || [];
+                        if (e.target.checked) {
+                          setNewPost({...newPost, linkedProductIds: [...currentIds, item.id]});
+                        } else {
+                          setNewPost({...newPost, linkedProductIds: currentIds.filter(id => id !== item.id)});
+                        }
+                      }}
+                      className="product-checkbox"
+                    />
+                    <span className="product-checkbox-text">
+                      {item.brand} {item.item} {item.status === 'sold' && `(Sold: €${item.sellPrice || 0})`}
+                    </span>
+                  </label>
+                ))}
+                {inventory.length === 0 && (
+                  <p className="vat-note" style={{ marginTop: '0.5rem' }}>
+                    No products in inventory. Add products in Profit Tracker first.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Revenue Tracking */}
+            <div className="form-group">
+              <label>Revenue Generated (€)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={newPost.revenue}
+                onChange={(e) => setNewPost({...newPost, revenue: e.target.value})}
                 className="input-field"
-              >
-                <option value="photo">Photo</option>
-                <option value="video">Video</option>
-                <option value="carousel">Carousel</option>
-                <option value="reel">Reel</option>
-              </select>
+                placeholder="0.00"
+              />
+              <p className="form-help-text">
+                Enter total revenue generated from this post (sales, conversions, etc.)
+              </p>
             </div>
 
             {/* OCR Screenshot Upload */}

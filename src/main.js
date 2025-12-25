@@ -23,28 +23,17 @@ const createWindow = () => {
       partition: 'persist:main'
     },
     show: false, // Don't show until ready
-    // Use native Mac title bar on macOS for better integration
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     frame: true,
     resizable: true,
     maximizable: true,
     minimizable: true,
-    closable: true,
-    // Mac-specific: Use native vibrancy effect
-    ...(process.platform === 'darwin' && {
-      vibrancy: 'ultra-dark',
-      visualEffectState: 'active'
-    })
+    closable: true
   });
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    
-    // Focus the window
-    if (process.platform === 'darwin') {
-      mainWindow.focus();
-    }
+    mainWindow.focus();
   });
 
   // and load the index.html of the app.
@@ -61,23 +50,11 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
-
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+// Quit when all windows are closed
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  app.quit();
 });
 
 // In this file you can include the rest of your app's specific main process
