@@ -6,6 +6,10 @@ import './App.css';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+// VAT Configuration
+const VAT_RATE = 0.21; // 21% Dutch VAT
+const VAT_START_DATE = '2025-01-01'; // KVK registration date
+
 const FinanceInventoryApp = () => {
   const [activeTab, setActiveTab] = useState('finances');
   const [finances, setFinances] = useState([]);
@@ -492,27 +496,45 @@ const FinanceInventoryApp = () => {
     }));
   };
 
-  // Update existing sold/traded items with correct profit calculation
+  // Update existing sold/traded items with correct profit calculation and VAT
+  // This function preserves ALL existing data and only adds missing VAT calculations
   const updateExistingItemsProfit = () => {
     const updatedInventory = inventory.map(item => {
+      // Preserve all existing item data
+      const updatedItem = { ...item };
+      
       if (item.status === 'sold' && item.sellPrice && item.purchasePrice) {
-        return {
-          ...item,
-          profit: item.sellPrice - item.purchasePrice
-        };
+        // Update profit calculation
+        updatedItem.profit = item.sellPrice - item.purchasePrice;
+        
+        // Only calculate VAT if not already present (preserve existing VAT data)
+        if (item.vatAmount === undefined && item.sellDate) {
+          const vatCalculation = calculateVAT(item.sellPrice, item.sellDate);
+          updatedItem.vatAmount = vatCalculation.vatAmount;
+          updatedItem.netPrice = vatCalculation.netPrice;
+          updatedItem.grossPrice = vatCalculation.grossPrice;
+          updatedItem.vatApplicable = vatCalculation.vatApplicable;
+        } else if (item.vatAmount === undefined) {
+          // If no sellDate, set default values but don't calculate VAT
+          updatedItem.vatAmount = 0;
+          updatedItem.netPrice = item.sellPrice;
+          updatedItem.grossPrice = item.sellPrice;
+          updatedItem.vatApplicable = false;
+        }
+        // If VAT already exists, keep it as is
       }
       if (item.status === 'traded' && item.tradeValue && item.purchasePrice) {
-        return {
-          ...item,
-          profit: item.tradeValue - item.purchasePrice
-        };
+        updatedItem.profit = item.tradeValue - item.purchasePrice;
       }
-      return item;
+      
+      return updatedItem;
     });
     
     if (JSON.stringify(updatedInventory) !== JSON.stringify(inventory)) {
       setInventory(updatedInventory);
-      showToastMessage('Updated existing items with correct profit calculations!');
+      showToastMessage('Updated existing items with correct profit calculations and VAT!');
+    } else {
+      showToastMessage('All items already have correct calculations!');
     }
   };
 
@@ -647,6 +669,112 @@ const FinanceInventoryApp = () => {
     }, 3000);
   };
 
+  // VAT Calculation Functions
+  const calculateVAT = (sellPrice, sellDate) => {
+    // Handle missing or invalid sellDate - default to no VAT
+    if (!sellDate || sellDate === '') {
+      return {
+        vatAmount: 0,
+        netPrice: sellPrice,
+        grossPrice: sellPrice,
+        vatApplicable: false
+      };
+    }
+    
+    // Only calculate VAT for sales from VAT_START_DATE onwards
+    if (sellDate < VAT_START_DATE) {
+      return {
+        vatAmount: 0,
+        netPrice: sellPrice,
+        grossPrice: sellPrice,
+        vatApplicable: false
+      };
+    }
+    
+    // Calculate VAT: VAT = sellPrice * VAT_RATE / (1 + VAT_RATE)
+    // This assumes sellPrice is the price including VAT (gross price)
+    const vatAmount = sellPrice * VAT_RATE / (1 + VAT_RATE);
+    const netPrice = sellPrice - vatAmount;
+    
+    return {
+      vatAmount: parseFloat(vatAmount.toFixed(2)),
+      netPrice: parseFloat(netPrice.toFixed(2)),
+      grossPrice: parseFloat(sellPrice.toFixed(2)),
+      vatApplicable: true
+    };
+  };
+
+  const getQuarter = (dateString) => {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1; // 1-12
+    if (month >= 1 && month <= 3) return 'Q1';
+    if (month >= 4 && month <= 6) return 'Q2';
+    if (month >= 7 && month <= 9) return 'Q3';
+    return 'Q4';
+  };
+
+  const getQuarterYear = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const quarter = getQuarter(dateString);
+    return `${year}-${quarter}`;
+  };
+
+  // Get current quarter based on today's date
+  const getCurrentQuarter = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1; // 1-12
+    
+    let quarter;
+    if (month >= 1 && month <= 3) quarter = 'Q1';
+    else if (month >= 4 && month <= 6) quarter = 'Q2';
+    else if (month >= 7 && month <= 9) quarter = 'Q3';
+    else quarter = 'Q4';
+    
+    return `${year}-${quarter}`;
+  };
+
+  const calculateQuarterlyVAT = () => {
+    const quarterlyVAT = {};
+    
+    // Filter sold items from VAT_START_DATE onwards
+    // Include items with sellDate >= VAT_START_DATE, or items that have vatAmount > 0
+    // This ensures we don't miss any VAT-applicable sales
+    const vatApplicableSales = inventory.filter(item => {
+      if (item.status !== 'sold' || !item.sellDate) return false;
+      
+      // Include if date is after VAT start date, or if VAT was already calculated
+      return item.sellDate >= VAT_START_DATE || (item.vatAmount !== undefined && item.vatAmount > 0);
+    });
+    
+    vatApplicableSales.forEach(item => {
+      const quarterKey = getQuarterYear(item.sellDate);
+      if (!quarterlyVAT[quarterKey]) {
+        quarterlyVAT[quarterKey] = {
+          quarter: quarterKey,
+          totalVAT: 0,
+          totalSales: 0,
+          netSales: 0,
+          count: 0
+        };
+      }
+      quarterlyVAT[quarterKey].totalVAT += item.vatAmount || 0;
+      quarterlyVAT[quarterKey].totalSales += item.sellPrice || 0;
+      quarterlyVAT[quarterKey].netSales += item.netPrice || 0;
+      quarterlyVAT[quarterKey].count += 1;
+    });
+    
+    // Convert to array and sort by quarter
+    return Object.values(quarterlyVAT)
+      .map(q => ({
+        ...q,
+        totalVAT: parseFloat(q.totalVAT.toFixed(2)),
+        totalSales: parseFloat(q.totalSales.toFixed(2)),
+        netSales: parseFloat(q.netSales.toFixed(2))
+      }))
+      .sort((a, b) => a.quarter.localeCompare(b.quarter));
+  };
 
   const addTransaction = () => {
     if (!newTransaction.amount || !newTransaction.description) {
@@ -707,13 +835,20 @@ const FinanceInventoryApp = () => {
 
     const sellPriceNum = parseFloat(sellPrice);
     const profit = sellPriceNum - selectedItem.purchasePrice;
+    
+    // Calculate VAT
+    const vatCalculation = calculateVAT(sellPriceNum, sellDate);
 
     const updatedItem = {
       ...selectedItem,
       status: 'sold',
       sellPrice: sellPriceNum,
       profit: profit,
-      sellDate: sellDate
+      sellDate: sellDate,
+      vatAmount: vatCalculation.vatAmount,
+      netPrice: vatCalculation.netPrice,
+      grossPrice: vatCalculation.grossPrice,
+      vatApplicable: vatCalculation.vatApplicable
     };
 
     setInventory(inventory.map(item => 
@@ -787,6 +922,9 @@ const FinanceInventoryApp = () => {
     const purchasePriceNum = parseFloat(historicalSale.purchasePrice);
     const sellPriceNum = parseFloat(historicalSale.sellPrice);
     const profit = sellPriceNum - purchasePriceNum;
+    
+    // Calculate VAT
+    const vatCalculation = calculateVAT(sellPriceNum, historicalSale.sellDate);
 
     const item = {
       id: Date.now(),
@@ -801,7 +939,11 @@ const FinanceInventoryApp = () => {
       notes: historicalSale.notes,
       status: 'sold',
       sellDate: historicalSale.sellDate,
-      images: historicalSale.images || []
+      images: historicalSale.images || [],
+      vatAmount: vatCalculation.vatAmount,
+      netPrice: vatCalculation.netPrice,
+      grossPrice: vatCalculation.grossPrice,
+      vatApplicable: vatCalculation.vatApplicable
     };
 
     setInventory([...inventory, item]);
@@ -1809,6 +1951,130 @@ const FinanceInventoryApp = () => {
               </div>
             </div>
 
+            {/* VAT Analysis */}
+            <div className="card">
+              <h2>VAT Analysis (from {VAT_START_DATE})</h2>
+              {(() => {
+                const quarterlyVAT = calculateQuarterlyVAT();
+                const totalVAT = quarterlyVAT.reduce((sum, q) => sum + q.totalVAT, 0);
+                const totalSales = quarterlyVAT.reduce((sum, q) => sum + q.totalSales, 0);
+                const totalNetSales = quarterlyVAT.reduce((sum, q) => sum + q.netSales, 0);
+                
+                // Get VAT per quarter with proper quarter names
+                const getQuarterName = (quarterKey) => {
+                  const [year, quarter] = quarterKey.split('-');
+                  const quarterNames = {
+                    'Q1': 'Q1 (Jan-Mar)',
+                    'Q2': 'Q2 (Apr-Jun)',
+                    'Q3': 'Q3 (Jul-Sep)',
+                    'Q4': 'Q4 (Oct-Dec)'
+                  };
+                  return `${year} ${quarterNames[quarter] || quarter}`;
+                };
+                
+                // Ensure all quarters are represented, even if no sales
+                const allQuarters = ['Q1', 'Q2', 'Q3', 'Q4'];
+                const currentYear = new Date().getFullYear();
+                const quartersWithData = {};
+                quarterlyVAT.forEach(q => {
+                  quartersWithData[q.quarter] = q;
+                });
+                
+                return (
+                  <>
+                    <div className="vat-summary">
+                      <div className="vat-summary-item">
+                        <h3>Total VAT to Pay (All Quarters)</h3>
+                        <p className="stat-value expense">€{totalVAT.toFixed(2)}</p>
+                      </div>
+                      <div className="vat-summary-item">
+                        <h3>Total Sales (Gross)</h3>
+                        <p className="stat-value">€{totalSales.toFixed(2)}</p>
+                      </div>
+                      <div className="vat-summary-item">
+                        <h3>Total Sales (Net)</h3>
+                        <p className="stat-value">€{totalNetSales.toFixed(2)}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Per-Quarter VAT Cards */}
+                    {quarterlyVAT.length > 0 ? (
+                      <>
+                        <div className="vat-quarterly-cards">
+                          <h3>VAT to Pay per Quarter</h3>
+                          <div className="vat-quarter-grid">
+                            {(() => {
+                              const currentQuarter = getCurrentQuarter();
+                              return quarterlyVAT.map((quarter) => {
+                                const isCurrentQuarter = quarter.quarter === currentQuarter;
+                                return (
+                                  <div 
+                                    key={quarter.quarter} 
+                                    className={`vat-quarter-card ${isCurrentQuarter ? 'current-quarter' : ''}`}
+                                  >
+                                    <h4>
+                                      {getQuarterName(quarter.quarter)}
+                                      {isCurrentQuarter && <span className="current-quarter-badge">Current</span>}
+                                    </h4>
+                                    <div className="vat-quarter-amount">
+                                      <span className="vat-label">VAT to Pay:</span>
+                                      <span className="vat-value expense">€{quarter.totalVAT.toFixed(2)}</span>
+                                    </div>
+                                    <div className="vat-quarter-details">
+                                      <div className="vat-detail-row">
+                                        <span>Sales:</span>
+                                        <span>{quarter.count}</span>
+                                      </div>
+                                      <div className="vat-detail-row">
+                                        <span>Gross Sales:</span>
+                                        <span>€{quarter.totalSales.toFixed(2)}</span>
+                                      </div>
+                                      <div className="vat-detail-row">
+                                        <span>Net Sales:</span>
+                                        <span>€{quarter.netSales.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+                        
+                        <div className="vat-quarterly-table">
+                          <h3>Quarterly VAT Breakdown (Detailed)</h3>
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Quarter</th>
+                                <th>Sales Count</th>
+                                <th>Gross Sales</th>
+                                <th>Net Sales</th>
+                                <th>VAT Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {quarterlyVAT.map((quarter) => (
+                                <tr key={quarter.quarter}>
+                                  <td><strong>{getQuarterName(quarter.quarter)}</strong></td>
+                                  <td>{quarter.count}</td>
+                                  <td>€{quarter.totalSales.toFixed(2)}</td>
+                                  <td>€{quarter.netSales.toFixed(2)}</td>
+                                  <td className="vat-amount">€{quarter.totalVAT.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="vat-note">No VAT-applicable sales yet. VAT applies to sales from {VAT_START_DATE} onwards.</p>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
             {/* Export/Import Data */}
             <div className="card">
               <h2>Export/Import Data</h2>
@@ -1838,41 +2104,72 @@ const FinanceInventoryApp = () => {
       </main>
 
       {/* Sell Modal */}
-      {showSellModal && selectedItem && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Sell Item</h2>
-            <p>{selectedItem.brand} {selectedItem.item}</p>
-            <div className="form-group">
-              <label>Sell Price</label>
-              <input
-                type="number"
-                value={sellPrice}
-                onChange={(e) => setSellPrice(e.target.value)}
-                className="input-field"
-                placeholder="Enter sell price"
-              />
-            </div>
-            <div className="form-group">
-              <label>Sell Date</label>
-              <input
-                type="date"
-                value={sellDate}
-                onChange={(e) => setSellDate(e.target.value)}
-                className="input-field"
-              />
-            </div>
-            <div className="modal-actions">
-              <button onClick={markAsSold} className="button">
-                Confirm Sale
-              </button>
-              <button onClick={() => setShowSellModal(false)} className="button secondary">
-                Cancel
-              </button>
+      {showSellModal && selectedItem && (() => {
+        const sellPriceNum = sellPrice ? parseFloat(sellPrice) : 0;
+        const vatCalc = sellPriceNum > 0 ? calculateVAT(sellPriceNum, sellDate) : null;
+        return (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h2>Sell Item</h2>
+              <p>{selectedItem.brand} {selectedItem.item}</p>
+              <div className="form-group">
+                <label>Sell Price (including VAT)</label>
+                <input
+                  type="number"
+                  value={sellPrice}
+                  onChange={(e) => setSellPrice(e.target.value)}
+                  className="input-field"
+                  placeholder="Enter sell price"
+                />
+              </div>
+              <div className="form-group">
+                <label>Sell Date</label>
+                <input
+                  type="date"
+                  value={sellDate}
+                  onChange={(e) => setSellDate(e.target.value)}
+                  className="input-field"
+                />
+              </div>
+              {vatCalc && sellPriceNum > 0 && (
+                <div className="vat-breakdown">
+                  <h3>VAT Breakdown</h3>
+                  <div className="vat-details">
+                    <div className="vat-row">
+                      <span>Gross Price (incl. VAT):</span>
+                      <span>€{vatCalc.grossPrice.toFixed(2)}</span>
+                    </div>
+                    {vatCalc.vatApplicable ? (
+                      <>
+                        <div className="vat-row">
+                          <span>VAT ({VAT_RATE * 100}%):</span>
+                          <span className="vat-amount">€{vatCalc.vatAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="vat-row">
+                          <span>Net Price (excl. VAT):</span>
+                          <span>€{vatCalc.netPrice.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="vat-row">
+                        <span className="vat-note">VAT not applicable (before {VAT_START_DATE})</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="modal-actions">
+                <button onClick={markAsSold} className="button">
+                  Confirm Sale
+                </button>
+                <button onClick={() => setShowSellModal(false)} className="button secondary">
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Trade Modal */}
       {showTradeModal && selectedItem && (
@@ -2039,12 +2336,30 @@ const FinanceInventoryApp = () => {
                     <h3>Sale Information</h3>
                     <div className="detail-grid">
                       <div className="detail-item">
-                        <label>Sell Price:</label>
-                        <span>${selectedItemDetail.sellPrice.toFixed(2)}</span>
+                        <label>Gross Price (incl. VAT):</label>
+                        <span>€{selectedItemDetail.sellPrice.toFixed(2)}</span>
                       </div>
+                      {selectedItemDetail.vatApplicable && selectedItemDetail.vatAmount !== undefined && (
+                        <>
+                          <div className="detail-item">
+                            <label>VAT ({VAT_RATE * 100}%):</label>
+                            <span className="vat-amount">€{selectedItemDetail.vatAmount.toFixed(2)}</span>
+                          </div>
+                          <div className="detail-item">
+                            <label>Net Price (excl. VAT):</label>
+                            <span>€{selectedItemDetail.netPrice.toFixed(2)}</span>
+                          </div>
+                        </>
+                      )}
+                      {!selectedItemDetail.vatApplicable && (
+                        <div className="detail-item">
+                          <label>VAT Status:</label>
+                          <span className="vat-note">Not applicable (before {VAT_START_DATE})</span>
+                        </div>
+                      )}
                       <div className="detail-item">
                         <label>Profit:</label>
-                        <span className="profit">${selectedItemDetail.profit.toFixed(2)}</span>
+                        <span className="profit">€{selectedItemDetail.profit.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -2276,6 +2591,18 @@ const FinanceInventoryApp = () => {
           </div>
         </div>
       )}
+
+      {/* Footer */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <p className="footer-text">
+            © 2024 ProfitTracker Pro. All rights reserved.
+          </p>
+          <p className="footer-text">
+            KVK: [YOUR_KVK_NUMBER]
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

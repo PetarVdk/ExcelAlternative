@@ -46,6 +46,7 @@ npm run build
 - **Version**: 1.0.0
 - **Category**: Finance & Business
 - **Platform**: Windows, macOS, Linux
+- **KVK Number**: [YOUR_KVK_NUMBER]
 
 ## 🛠️ Technical Details
 

@@ -21,6 +21,10 @@
   "keywords": ["finance", "inventory", "profit", "tracking", "business", "reselling", "ecommerce"],
   "author": "Petar",
   "license": "MIT",
+  "company": {
+    "name": "ProfitTracker Pro",
+    "kvk": "[YOUR_KVK_NUMBER]"
+  },
   "homepage": "https://github.com/YOUR_USERNAME/profit-tracker-pro#readme",
   "devDependencies": {
     "@babel/core": "^7.28.4",

@@ -1599,3 +1599,287 @@ select:focus {
     flex-direction: column;
   }
 }
+
+/* Footer */
+.app-footer {
+  background: var(--gradient-secondary);
+  backdrop-filter: var(--backdrop-blur);
+  border-top: 1px solid var(--glass-border);
+  padding: 1rem 1.5rem;
+  margin-top: 3rem;
+  position: relative;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-text {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* VAT Styling */
+.vat-breakdown {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.vat-breakdown h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.vat-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vat-row:last-child {
+  border-bottom: none;
+}
+
+.vat-row span:first-child {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.vat-row span:last-child {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.vat-amount {
+  color: #f59e0b !important;
+  font-weight: 700 !important;
+}
+
+.vat-note {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.vat-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.vat-summary-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  text-align: center;
+}
+
+.vat-summary-item h3 {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vat-quarterly-table {
+  margin-top: 1.5rem;
+}
+
+.vat-quarterly-table h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.vat-quarterly-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.vat-quarterly-table th {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.vat-quarterly-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.vat-quarterly-table tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vat-quarterly-table td.vat-amount {
+  color: #f59e0b;
+  font-weight: 700;
+}
+
+/* Quarterly VAT Cards */
+.vat-quarterly-cards {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.vat-quarterly-cards h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.vat-quarter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.vat-quarter-card {
+  background: var(--gradient-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  backdrop-filter: var(--backdrop-blur);
+  transition: var(--transition-smooth);
+  position: relative;
+}
+
+.vat-quarter-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--glass-accent);
+}
+
+.vat-quarter-card.current-quarter {
+  border: 2px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+  box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+}
+
+.vat-quarter-card.current-quarter:hover {
+  box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4);
+  border-color: #f59e0b;
+}
+
+.current-quarter-badge {
+  display: inline-block;
+  background: #f59e0b;
+  color: #000;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  margin-left: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.vat-quarter-card h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--glass-border);
+}
+
+.vat-quarter-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--border-radius);
+}
+
+.vat-quarter-amount .vat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vat-quarter-amount .vat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.vat-quarter-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vat-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.9rem;
+}
+
+.vat-detail-row:last-child {
+  border-bottom: none;
+}
+
+.vat-detail-row span:first-child {
+  color: var(--text-secondary);
+}
+
+.vat-detail-row span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .vat-quarter-grid {
+    grid-template-columns: 1fr;
+  }
+}

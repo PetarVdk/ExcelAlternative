@@ -10,7 +10,7 @@ module.exports = {
     appCategoryType: 'public.app-category.finance',
     appVersion: '1.0.0',
     buildVersion: '1.0.0',
-    copyright: '© 2024 ProfitTracker Pro. All rights reserved.',
+    copyright: '© 2024 ProfitTracker Pro. All rights reserved. KVK: [YOUR_KVK_NUMBER]',
     win32metadata: {
       CompanyName: 'ProfitTracker Pro',
       ProductName: 'ProfitTracker Pro',
